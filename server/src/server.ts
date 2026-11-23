@@ -4,14 +4,17 @@ import { ENV } from './config/env';
 import { logger } from './utils/logger';
 
 const startServer = async () => {
-  // Connect to Database
-  await connectDB();
-
   const app = createApp();
 
-  const server = app.listen(ENV.PORT, () => {
-    logger.info('SERVER', `🚀 AI Exam Coach Server listening on port ${ENV.PORT} [${ENV.NODE_ENV}]`);
-    logger.info('SERVER', `📡 Health Check: http://localhost:${ENV.PORT}/api/health`);
+  const port = Number(ENV.PORT) || 5000;
+  const server = app.listen(port, '0.0.0.0', () => {
+    logger.info('SERVER', `🚀 AI Exam Coach Server listening on port ${port} [${ENV.NODE_ENV}]`);
+    logger.info('SERVER', `📡 Health Check: http://localhost:${port}/api/health`);
+  });
+
+  // Connect to Database asynchronously so port binds immediately for cloud health checks
+  connectDB().catch((err) => {
+    logger.error('SERVER', `Initial MongoDB connection error: ${err.message}`);
   });
 
   // Graceful Shutdown
