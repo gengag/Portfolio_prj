@@ -19,7 +19,7 @@ const KnowledgeBasePage = lazy(() => import('./pages/KnowledgeBasePage').then((m
 const ProfilePage = lazy(() => import('./pages/ProfilePage').then((m) => ({ default: m.ProfilePage })));
 const AdminPage = lazy(() => import('./pages/AdminPage').then((m) => ({ default: m.AdminPage })));
 
-// Protected Route Guard
+// Protected Route Guard: Only authenticated users can access
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth();
 
@@ -38,6 +38,25 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   return <>{children}</>;
 };
 
+// Public/Auth Route Guard: If user is already logged in, redirect them directly to /dashboard
+const PublicOnlyRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: 'var(--text-secondary)' }}>
+        Loading AI Exam Coach...
+      </div>
+    );
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <>{children}</>;
+};
+
 // Route transition suspense fallback
 const RouteLoadingFallback: React.FC = () => (
   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh', color: 'var(--text-secondary)' }}>
@@ -47,6 +66,14 @@ const RouteLoadingFallback: React.FC = () => (
   </div>
 );
 
+// Catch-all handler for invalid/wrong URLs:
+// If logged in -> securely directs to /dashboard
+// If not logged in -> directs to /login
+const NotFoundRedirect: React.FC = () => {
+  const { isAuthenticated } = useAuth();
+  return <Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />;
+};
+
 export const App: React.FC = () => {
   return (
     <BrowserRouter>
@@ -55,10 +82,10 @@ export const App: React.FC = () => {
           <Route element={<Layout />}>
             {/* Onboarding route - requires auth but may be un‑onboarded */}
             <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
-            {/* Public Routes */}
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
+            {/* Public/Auth Routes: Block authenticated users from accessing login/register/landing */}
+            <Route path="/" element={<PublicOnlyRoute><LandingPage /></PublicOnlyRoute>} />
+            <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
+            <Route path="/register" element={<PublicOnlyRoute><RegisterPage /></PublicOnlyRoute>} />
 
             {/* Protected Routes */}
             <Route
@@ -143,8 +170,8 @@ export const App: React.FC = () => {
             />
           </Route>
 
-          {/* Catch-all */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          {/* Catch-all: prevent broken view on wrong URLs */}
+          <Route path="*" element={<NotFoundRedirect />} />
         </Routes>
       </Suspense>
     </BrowserRouter>

@@ -5,8 +5,9 @@ import { Sidebar } from './Sidebar';
 import { useAuth } from '../../context/AuthContext';
 
 export const Layout: React.FC = () => {
-  const { isAuthenticated, user } = useAuth();
-  const showSidebar = isAuthenticated && user?.isOnboarded !== false;
+  const { isAuthenticated } = useAuth();
+  // Sidebar should always be visible whenever the user is logged in
+  const showSidebar = isAuthenticated;
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
