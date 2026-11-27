@@ -1,21 +1,22 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
-import { ArrowRight, AlertCircle, Loader2, Sparkles } from 'lucide-react';
+import { ArrowRight, AlertCircle, CheckCircle2, Loader2, Sparkles, Eye, EyeOff } from 'lucide-react';
 
 export const RegisterPage: React.FC = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSuccessMsg(null);
 
     if (password.length < 6) {
       setError('Password must be at least 6 characters long');
@@ -25,11 +26,11 @@ export const RegisterPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const res: any = await api.post('/auth/register', { name, email, password });
-      if (res.data?.token && res.data?.user) {
-        login(res.data.token, res.data.user);
-        navigate('/onboarding');
-      }
+      await api.post('/auth/register', { name, email, password });
+      setSuccessMsg('Account created successfully! Redirecting to login...');
+      setTimeout(() => {
+        navigate('/login');
+      }, 1500);
     } catch (err: any) {
       setError(err.message || 'Registration failed');
     } finally {
@@ -49,6 +50,24 @@ export const RegisterPage: React.FC = () => {
             Start personalized adaptive preparation in 2 minutes
           </p>
         </div>
+
+        {successMsg && (
+          <div style={{
+            background: 'rgba(16, 185, 129, 0.15)',
+            border: '1px solid rgba(16, 185, 129, 0.3)',
+            borderRadius: 'var(--radius-md)',
+            padding: '0.75rem 1rem',
+            marginBottom: '1.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            color: '#6ee7b7',
+            fontSize: '0.9rem'
+          }}>
+            <CheckCircle2 size={18} />
+            <span>{successMsg}</span>
+          </div>
+        )}
 
         {error && (
           <div style={{
@@ -95,19 +114,42 @@ export const RegisterPage: React.FC = () => {
 
           <div className="input-group">
             <label className="input-label">Password (min 6 characters)</label>
-            <input
-              type="password"
-              required
-              className="input-field"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                className="input-field"
+                placeholder="••••••••"
+                style={{ paddingRight: '2.8rem' }}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                tabIndex={-1}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                style={{
+                  position: 'absolute',
+                  right: '0.8rem',
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '0.2rem'
+                }}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
 
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || !!successMsg}
             className="btn btn-primary"
             style={{ width: '100%', marginTop: '1rem', padding: '0.8rem' }}
           >
